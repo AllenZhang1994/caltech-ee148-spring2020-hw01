@@ -30,20 +30,20 @@ def detect_red_light(I):
     of fixed size and returns the results in the proper format.
     '''
     
-    box_height = 8
-    box_width = 6
+    alpha = 0.8
+    n_rows,n_cols,n_channels = np.shape(I)
     
-    num_boxes = np.random.randint(1,5) 
-    
-    for i in range(num_boxes):
-        (n_rows,n_cols,n_channels) = np.shape(I)
+    for kernel in my_kernels:
+        box_height, box_width, _ = kernel.shape
+        thredshold = int(np.tensordot(kernel, kernel, axes=([0,1,2], [0,1,2])))
         
-        tl_row = np.random.randint(n_rows - box_height)
-        tl_col = np.random.randint(n_cols - box_width)
-        br_row = tl_row + box_height
-        br_col = tl_col + box_width
-        
-        bounding_boxes.append([tl_row,tl_col,br_row,br_col]) 
+                                      
+        for i in range(n_rows - box_height):
+            for j in range(n_cols, box_width):
+                window = I[i:i+box_height, j:j+box_width, :]
+                score = np.tensordot(kernel, window, axes=([0,1,2], [0,1,2]))
+                if score > alpha*thredshold:
+                    bounding_boxes.append([i,j,i+box_height,j+box_width])
     
     '''
     END YOUR CODE
@@ -54,6 +54,33 @@ def detect_red_light(I):
     
     return bounding_boxes
 
+
+# the following is the main code for handling data and do prediction
+"""
+Now save the convolution kernels to the kernels list
+"""
+
+# set the path to the convolution kernels
+kernel_path = '/Users/yongzhezhang/Documents/CS148 Selected Topics in Computational Vision/Project-1/kernels'
+
+os.makedirs(kernel_path,exist_ok=True) # create directory if needed 
+
+# get sorted list of Kernels files: 
+kernel_names = sorted(os.listdir(kernel_path)) 
+kernel_Images = [f for f in kernel_names if '.jpg' in f]
+
+my_kernels = []
+for i in range(len(kernel_Images)):
+    
+    # read image using PIL:
+    I = Image.open(os.path.join(kernel_path, kernel_Images[i]))
+    I = np.asarray(I)[:,:,0:3]
+    my_kernels.append(I)
+
+"""
+Finished Saving the convolution kernels to the kernels list
+"""
+
 # set the path to the downloaded data: 
 data_path = '/Users/yongzhezhang/Documents/CS148 Selected Topics in Computational Vision/Project-1/RedLights2011_Medium'
 
@@ -61,12 +88,14 @@ data_path = '/Users/yongzhezhang/Documents/CS148 Selected Topics in Computationa
 preds_path = '/Users/yongzhezhang/Documents/CS148 Selected Topics in Computational Vision/Project-1/hw01_preds' 
 os.makedirs(preds_path,exist_ok=True) # create directory if needed 
 
-# get sorted list of files: 
+# get sorted list of Image files: 
 file_names = sorted(os.listdir(data_path)) 
 
 # remove any non-JPEG files: 
 file_names = [f for f in file_names if '.jpg' in f] 
 
+
+# main progrom for prediction
 preds = {}
 for i in range(len(file_names)):
     
