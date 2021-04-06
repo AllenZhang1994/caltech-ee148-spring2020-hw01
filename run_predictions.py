@@ -3,7 +3,9 @@ import numpy as np
 import json
 from PIL import Image
 
-def detect_red_light(I):
+
+def detect_red_light(I, my_kernels):
+    print(12345)
     '''
     This function takes a numpy array <I> and returns a list <bounding_boxes>.
     The list <bounding_boxes> should have one element for each red light in the 
@@ -30,18 +32,17 @@ def detect_red_light(I):
     of fixed size and returns the results in the proper format.
     '''
     
-    alpha = 0.8
-    n_rows,n_cols,n_channels = np.shape(I)
+    alpha = 0.99
+    n_rows, n_cols, n_channels = np.shape(I)
     
     for kernel in my_kernels:
         box_height, box_width, _ = kernel.shape
-        thredshold = int(np.tensordot(kernel, kernel, axes=([0,1,2], [0,1,2])))
-        
-                                      
+        thredshold = int(np.tensordot(kernel, kernel, axes=([0,1,2], [0,1,2])))               
         for i in range(n_rows - box_height):
-            for j in range(n_cols, box_width):
+            for j in range(n_cols - box_width):
                 window = I[i:i+box_height, j:j+box_width, :]
-                score = np.tensordot(kernel, window, axes=([0,1,2], [0,1,2]))
+                score = int(np.tensordot(kernel, window, axes=([0,1,2], [0,1,2])))
+                
                 if score > alpha*thredshold:
                     bounding_boxes.append([i,j,i+box_height,j+box_width])
     
@@ -105,7 +106,7 @@ for i in range(len(file_names)):
     # convert to numpy array:
     I = np.asarray(I)
     
-    preds[file_names[i]] = detect_red_light(I)
+    preds[file_names[i]] = detect_red_light(I, my_kernels)
 
 # save preds (overwrites any previous predictions!)
 with open(os.path.join(preds_path,'preds.json'),'w') as f:
